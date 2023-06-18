@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comparação de Preços de Fornecedores</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: inline-block;
+            width: 120px;
+        }
+
+        textarea {
+            width: 300px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .menor-preco {
+            background-color: #eaf7ea;
+        }
+
+        #comparativo {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .fornecedor-info {
+            width: 350px;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .total-info {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comparação de Preços de Fornecedores</h1>
+    <h2>Registrar Produto</h2>
+    <form id="registroForm">
+        <label for="fornecedor">Fornecedor:</label>
+        <input type="text" id="fornecedor" required><br><br>
+
+        <label for="produtos">Produtos:</label>
+        <textarea id="produtos" rows="4" required></textarea><br><br>
+
+        <label for="quantidades">Quantidades:</label>
+        <textarea id="quantidades" rows="4" required></textarea><br><br>
+
+        <label for="valores">Valores:</label>
+        <textarea id="valores" rows="4" required></textarea><br><br>
+
+        <button type="button" onclick="adicionarProdutos()">Adicionar Produtos</button>
+        <button type="button" onclick="limparTudo()">Limpar Tudo</button>
+
+    </form>
+
+    <h2>Produtos Registrados</h2>
+    <table id="tabela">
+        <tr>
+            <th>Fornecedor</th>
+            <th>Produto</th>
+            <th>Preço</th>
+            <th>Quantidade</th>
+            <th>Total</th>
+        </tr>
+    </table>
+
+    <div id="comparativo">
+    </div>
+
+    <script>
+      var produtosRegistrados = [];
+
+      function adicionarProdutos() {
+        var fornecedorInput = document.getElementById("fornecedor");
+        var produtosInput = document.getElementById("produtos");
+        var quantidadesInput = document.getElementById("quantidades");
+        var valoresInput = document.getElementById("valores");
+
+        var fornecedor = fornecedorInput.value.trim();
+        var produtos = produtosInput.value.trim().split("\n");
+        var quantidades = quantidadesInput.value.trim().split("\n");
+        var valores = valoresInput.value.trim().split("\n").map(function (valor) {
+  return parseFloat(valor.replace(",", "."));
+});
+
+
+        if (
+          fornecedor === "" ||
+          produtos.length === 0 ||
+          quantidades.length === 0 ||
+          valores.length === 0
+        ) {
+          return;
+        }
+
+        for (var i = 0; i < produtos.length; i++) {
+          var produto = produtos[i].trim();
+          var quantidade = parseInt(quantidades[i]);
+          var valor = parseFloat(valores[i]);
+
+          if (
+            produto === "" ||
+            isNaN(quantidade) ||
+            isNaN(valor) ||
+            valor === 0
+          ) {
+            continue;
+          }
+
+          var total = valor * quantidade;
+
+          var produtoRegistrado = {
+            fornecedor: fornecedor,
+            produto: produto,
+            preco: valor,
+            quantidade: quantidade,
+            total: total,
+          };
+
+          produtosRegistrados.push(produtoRegistrado);
+        }
+
+        fornecedorInput.value = "";
+        valoresInput.value = "";
+
+        salvarDadosLocalmente();
+        exibirProdutosRegistrados();
+        exibirComparativo();
+      }
+
+      function exibirProdutosRegistrados() {
+        var tabela = document.getElementById("tabela");
+        tabela.innerHTML = "";
+
+        var cabecalho = document.createElement("tr");
+        cabecalho.innerHTML =
+          "<th>Fornecedor</th><th>Produto</th><th>Preço</th><th>Quantidade</th><th>Total</th>";
+        tabela.appendChild(cabecalho);
+
+        for (var i = 0; i < produtosRegistrados.length; i++) {
+          var produtoRegistrado = produtosRegistrados[i];
+
+          var linha = document.createElement("tr");
+          linha.innerHTML =
+            "<td>" +
+            produtoRegistrado.fornecedor +
+            "</td>" +
+            "<td>" +
+            produtoRegistrado.produto +
+            "</td>" +
+            "<td>" +
+            produtoRegistrado.preco.toFixed(2) +
+            "</td>" +
+            "<td>" +
+            produtoRegistrado.quantidade +
+            "</td>" +
+            "<td>" +
+            produtoRegistrado.total.toFixed(2) +
+            "</td>";
+
+          tabela.appendChild(linha);
+        }
+      }
+
+      function limparTudo() {
+        produtosRegistrados = [];
+        exibirProdutosRegistrados();
+        exibirComparativo();
+        localStorage.clear();
+      }
+
+      function salvarDadosLocalmente() {
+        localStorage.setItem(
+          "produtosRegistrados",
+          JSON.stringify(produtosRegistrados)
+        );
+      }
+
+      function carregarDadosLocalmente() {
+        var dados = localStorage.getItem("produtosRegistrados");
+        if (dados) {
+          produtosRegistrados = JSON.parse(dados);
+          exibirProdutosRegistrados();
+          exibirComparativo();
+        }
+      }
+
+function obterFornecedoresComMenorPreco() {
+  var fornecedores = {};
+
+  for (var i = 0; i < produtosRegistrados.length; i++) {
+    var produtoRegistrado = produtosRegistrados[i];
+    var produto = produtoRegistrado.produto;
+    var preco = produtoRegistrado.preco;
+    var quantidade = produtoRegistrado.quantidade;
+    var fornecedor = produtoRegistrado.fornecedor;
+
+    if (!(produto in fornecedores)) {
+      fornecedores[produto] = {
+        fornecedor: fornecedor,
+        preco: preco,
+        quantidade: quantidade,
+      };
+    } else {
+      if (preco < fornecedores[produto].preco) {
+        fornecedores[produto] = {
+          fornecedor: fornecedor,
+          preco: preco,
+          quantidade: quantidade,
+        };
+      }
+    }
+  }
+
+  return fornecedores;
+}
+function exibirComparativo() {
+  var comparativoDiv = document.getElementById("comparativo");
+  comparativoDiv.innerHTML = "";
+
+  var fornecedoresComMenorPreco = obterFornecedoresComMenorPreco();
+
+  if (Object.keys(fornecedoresComMenorPreco).length < 2) {
+    var aviso = document.createElement("p");
+    aviso.textContent =
+      "É necessário adicionar pelo menos dois fornecedores para realizar a comparação.";
+    comparativoDiv.appendChild(aviso);
+    return;
+  }
+
+  var fornecedoresAgrupados = {};
+
+  for (var produto in fornecedoresComMenorPreco) {
+    var fornecedorComMenorPreco = fornecedoresComMenorPreco[produto];
+    var fornecedor = fornecedorComMenorPreco.fornecedor;
+
+    if (!(fornecedor in fornecedoresAgrupados)) {
+      fornecedoresAgrupados[fornecedor] = {
+        produtos: [],
+        total: 0,
+      };
+    }
+
+    var produtoParaCopiar = "Produto: " + produto;
+    var precoParaCopiar =
+      "Preço: R$" + fornecedorComMenorPreco.preco.toFixed(2);
+    var quantidadeParaCopiar =
+      "Quantidade: " + fornecedorComMenorPreco.quantidade;
+    var somaIndividual =
+      "Total: R$" +
+      (fornecedorComMenorPreco.preco * fornecedorComMenorPreco.quantidade).toFixed(
+        2
+      );
+
+    fornecedoresAgrupados[fornecedor].produtos.push(
+      produtoParaCopiar,
+      precoParaCopiar,
+      quantidadeParaCopiar,
+      somaIndividual
+    );
+
+    fornecedoresAgrupados[fornecedor].total +=
+      fornecedorComMenorPreco.preco * fornecedorComMenorPreco.quantidade;
+  }
+
+  for (var fornecedor in fornecedoresAgrupados) {
+    var fornecedorDiv = document.createElement("div");
+    fornecedorDiv.className = "fornecedor-info";
+
+    var fornecedorHeader = document.createElement("h3");
+    fornecedorHeader.textContent = "Fornecedor: " + fornecedor;
+    fornecedorDiv.appendChild(fornecedorHeader);
+
+    fornecedoresAgrupados[fornecedor].produtos.forEach(function (produtoInfo) {
+      var produtoParaCopiar = document.createElement("p");
+      produtoParaCopiar.textContent = produtoInfo;
+      fornecedorDiv.appendChild(produtoParaCopiar);
+    });
+
+    var totalInformativo = document.createElement("p");
+    totalInformativo.textContent =
+      "Total Informativo: R$" + fornecedoresAgrupados[fornecedor].total.toFixed(2);
+    fornecedorDiv.appendChild(totalInformativo);
+
+    var copiarButton = document.createElement("button");
+    copiarButton.textContent = "Copiar";
+    copiarButton.onclick = function () {
+      copiarTexto(this);
+    };
+    fornecedorDiv.appendChild(copiarButton);
+
+    comparativoDiv.appendChild(fornecedorDiv);
+  }
+}
+
+function copiarTexto(elemento) {
+  var texto = elemento.previousSibling.innerText;
+  navigator.clipboard.writeText(texto)
+    .then(function () {
+      console.log("Texto copiado com sucesso: " + texto);
+    })
+    .catch(function (erro) {
+      console.error("Erro ao copiar o texto: ", erro);
+    });
+}
+
+function copiarTexto(button) {
+  var fornecedorDiv = button.parentNode;
+  var fornecedorHeader = fornecedorDiv.querySelector("h3");
+  var informacoes = fornecedorDiv.querySelectorAll("p");
+
+  var texto = "Fornecedor: " + fornecedorHeader.textContent.replace("Fornecedor: ", "") + "\n";
+
+  for (var i = 0; i < informacoes.length; i++) {
+    texto += informacoes[i].textContent + "\n";
+  }
+
+  navigator.clipboard.writeText(texto).then(function () {
+    alert("Texto copiado para a área de transferência!");
+  });
+}
+
+
+
+      carregarDadosLocalmente();
+    </script>
+</body>
+</html>
